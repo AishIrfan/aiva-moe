@@ -48,8 +48,8 @@ return new class extends Migration
             $table->unsignedTinyInteger('display_order')->default(0);
             $table->timestamps();
 
-            $table->unique(['observation_rubric_id', 'label']);
-            $table->index(['observation_rubric_id', 'display_order']);
+            $table->unique(['observation_rubric_id', 'label'], 'orc_rubric_label_unique');
+            $table->index(['observation_rubric_id', 'display_order'], 'orc_rubric_order_idx');
         });
 
         // Each Campus pins its current active rubric. Nullable — campuses
