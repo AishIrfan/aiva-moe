@@ -76,8 +76,12 @@ return new class extends Migration
 
         Schema::create('ipg_leave_request_pensyarah_responses', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('ipg_leave_request_id')->constrained('ipg_leave_requests')->cascadeOnDelete();
-            $table->foreignId('course_offering_id')->constrained('course_offerings')->cascadeOnDelete();
+            $table->foreignId('ipg_leave_request_id')
+                ->constrained('ipg_leave_requests', 'id', 'ilrpr_request_fk')
+                ->cascadeOnDelete();
+            $table->foreignId('course_offering_id')
+                ->constrained('course_offerings', 'id', 'ilrpr_offering_fk')
+                ->cascadeOnDelete();
             // Stored EXPLICITLY (not derived through course_offering->lecturer)
             // — preserves who actually responded under substitute / reassignment.
             $table->foreignId('pensyarah_id')->constrained('pensyarahs')->cascadeOnDelete();
@@ -86,7 +90,10 @@ return new class extends Migration
             $table->text('conditions')->nullable();           // only when response=approve_impact
             $table->text('objection_reason')->nullable();     // only when response=object
             $table->timestamp('responded_at')->nullable();
-            $table->foreignId('responded_by_user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('responded_by_user_id')
+                ->nullable()
+                ->constrained('users', 'id', 'ilrpr_responded_user_fk')
+                ->nullOnDelete();
             // True when the system filled this in due to threshold elapse.
             // Stored explicitly (not inferred from responded_by_user_id IS NULL).
             $table->boolean('auto_acknowledged')->default(false);
