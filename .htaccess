@@ -1,0 +1,26 @@
+# Shared-host root: rewrite all non-existent files into Laravel's public/ folder.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # If a real file or dir exists at the requested path inside public/, serve it.
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Deny access to sensitive files and folders.
+<FilesMatch "^(\.env|\.env\..*|composer\.(json|lock)|package(-lock)?\.json|artisan|phpunit\.xml)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_alias.c>
+    RedirectMatch 403 /\.git(/|$)
+    RedirectMatch 403 /storage/logs/
+    RedirectMatch 403 /app/
+    RedirectMatch 403 /bootstrap/
+    RedirectMatch 403 /config/
+    RedirectMatch 403 /database/
+    RedirectMatch 403 /resources/
+    RedirectMatch 403 /routes/
+    RedirectMatch 403 /tests/
+    RedirectMatch 403 /vendor/
+</IfModule>
