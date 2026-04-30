@@ -202,13 +202,16 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // Phases 4–7: academics + practicum + hostel demo data.
-        $this->call(IpgDemoSeeder::class);
-
         // ============ IPG ROLE TEST ACCOUNTS ============
         // One login per IPG actor type. Emails are deliberately self-describing
         // so you can tell at a glance what each test account represents.
         // System routes them by `users.role` — the email is just for humans.
+        //
+        // Wired BEFORE IpgDemoSeeder so every Pensyarah has `user_id`
+        // populated when demo data is generated. Otherwise dependent
+        // rows (leave responses, attendance audit, discipline filers)
+        // get NULL `created_by_user_id` / `responded_by_user_id` on
+        // a fresh seed, since those columns derive from $pensyarah->user_id.
 
         // Promote Dr. Faiz Ramlan to Ketua Jabatan Bahasa Melayu (existing pensyarah).
         $kjPensyarah = Pensyarah::where('campus_id', $campus->id)
@@ -224,6 +227,8 @@ class DatabaseSeeder extends Seeder
         // Resolve the existing Pensyarah rows we'll wire test accounts to.
         $penyelaras  = Pensyarah::where('campus_id', $campus->id)->where('is_practicum_coordinator', true)->first();
         $pensyarah   = Pensyarah::where('campus_id', $campus->id)->where('name', 'Encik Wong Kit Mun')->first();
+        $pensyarah4  = Pensyarah::where('campus_id', $campus->id)->where('name', 'Puan Nurul Syamiela')->first();
+        $pensyarah5  = Pensyarah::where('campus_id', $campus->id)->where('name', 'Dr. Aminuddin Hassan')->first();
         $firstTrainee = Trainee::where('campus_id', $campus->id)->orderBy('id')->first();
 
         // 1. Ketua Jabatan (Bahasa Melayu)
@@ -265,5 +270,34 @@ class DatabaseSeeder extends Seeder
         if ($firstTrainee && $firstTrainee->user_id !== $traineeUser->id) {
             $firstTrainee->update(['user_id' => $traineeUser->id]);
         }
+
+        // 5. Additional Pensyarah accounts so all 5 Pensyarahs have user_ids.
+        // Real production deployments wouldn't have lecturer rows without
+        // login accounts, and downstream FKs on audit columns rely on this.
+        if ($pensyarah4) {
+            $pensyarah4User = User::firstOrCreate(
+                ['email' => 'pensyarah.nurul@aiva.test'],
+                ['name' => 'Puan Nurul Syamiela', 'password' => Hash::make('password'),
+                 'role' => User::ROLE_PENSYARAH, 'mode' => 'ipg', 'campus_id' => $campus->id]
+            );
+            if ($pensyarah4->user_id !== $pensyarah4User->id) {
+                $pensyarah4->update(['user_id' => $pensyarah4User->id]);
+            }
+        }
+        if ($pensyarah5) {
+            $pensyarah5User = User::firstOrCreate(
+                ['email' => 'pensyarah.aminuddin@aiva.test'],
+                ['name' => 'Dr. Aminuddin Hassan', 'password' => Hash::make('password'),
+                 'role' => User::ROLE_PENSYARAH, 'mode' => 'ipg', 'campus_id' => $campus->id]
+            );
+            if ($pensyarah5->user_id !== $pensyarah5User->id) {
+                $pensyarah5->update(['user_id' => $pensyarah5User->id]);
+            }
+        }
+
+        // Phases 4–7 + Wave 2: academics + practicum + hostel + mini-LMS demo data.
+        // Runs AFTER test accounts so all Pensyarahs have user_id populated
+        // before dependent rows are seeded.
+        $this->call(IpgDemoSeeder::class);
     }
 }
