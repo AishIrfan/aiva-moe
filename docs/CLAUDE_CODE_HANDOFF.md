@@ -255,4 +255,211 @@ Re-checking these on any future change:
 
 ---
 
-*End of handoff.*
+*End of Wave 1 handoff.*
+
+---
+---
+
+# Wave 2 Addendum — Hat 1 mini-LMS
+
+> **Date:** 2026-04-30 (closed)
+> **Author:** subsequent Claude session, continuing in the same project.
+> **Read first (still authoritative):** `IPG_MODE_CHECKLIST.md`, `IPG_WORKFLOWS.md` at project root. The Wave 1 sections above are still load-bearing — Wave 2 layers on top, doesn't replace.
+
+## TL;DR (Wave 2)
+
+**Wave 2 (Hat 1 mini-LMS schema + seed) is COMPLETE and verified.** Five units shipped in order A → C → B → D → E → F; five new migrations applied as batches 6–10; 17 new model classes; 5 new `config/ipg.php` keys (well, 3 keys plus 2 promoted from constants); ~561 new IPG-mode rows seeded idempotently. Wave 1 + Wave 2 totals all stable across re-seeds.
+
+The next session should:
+1. Read both planning docs + this Wave 2 addendum.
+2. Run `php artisan migrate:status` to confirm migrations through `2026_04_27_129000_create_ipg_discipline_schema` show `Ran`.
+3. Run `php artisan db:seed --force` to ensure demo data populated; spot-check counts in §W2.1 below.
+4. Wait for the user's go on Wave 3 before writing anything. Wave 3 scope is not yet defined; see "Open ambiguities for Wave 3+" below for likely candidates.
+
+## W2.1 — Wave 2 status: what landed
+
+### Unit A — Course Materials + Storage Config
+- Migration `2026_04_27_125000_create_course_materials_schema.php` — 3 tables: `course_material_categories` (lookup), `course_materials`, `course_material_files`.
+- Models: `CourseMaterialCategory`, `CourseMaterial`, `CourseMaterialFile`.
+- New `config/ipg.php` file created. Keys: `pensyarah.max_trainee_load` (promoted from `Pensyarah::MAX_TRAINEE_LOAD` constant; constant removed; replaced with `Pensyarah::maxTraineeLoad()` static accessor), `uploads.course_materials.disk` / `max_file_size_mb` / `allowed_mime_types`.
+- Storage: course materials use the `local` disk (storage/app/private — outside web root). Defaults to `hidden_draft` on create (the safer asymmetric pattern: accidental hide < accidental publish).
+- Seed counts: 6 categories / 45 materials / 45 file stubs. Visibility split 30 visible / 15 hidden_draft.
+
+### Unit C — IPG Attendance
+- Migration `2026_04_27_126000_create_ipg_attendance_schema.php` — 2 tables: `ipg_attendance_sessions`, `ipg_attendance_records`.
+- Models: `IpgAttendanceSession` (with status `recorded | cancelled`), `IpgAttendanceRecord` (with status `present | absent | late | excused_mc | excused_leave`).
+- New config key: `attendance.late_edit_threshold_days` (default 3).
+- Per-session granularity, distinct from school-mode's daily `attendance_snapshots`. `recorded_by_pensyarah_id` captures the substitute-lecturer case explicitly.
+- Implicit cohort-wide enrollment: trainees in an offering's cohort are treated as enrolled (PISMP has no electives in v1).
+- Seed counts: 60 sessions (45 recorded + 15 cancelled; 15 ad-hoc, 15 with substitute, 15 locked) / 180 records distributed 85/7/4/2/2 across 5 statuses.
+- **Bug found and fixed:** Eloquent's bare `'date'` cast writes datetime format on insert, but `updateOrCreate` WHERE binds raw strings — caused unique-constraint failure on re-seed. Fixed by pinning to `'date:Y-m-d'`. See `feedback_eloquent_date_cast_pin.md` memory.
+
+### Unit B — Assessments + Gradebook Columns + Online Test Question Bank
+- Migration `2026_04_27_127000_create_assessments_schema.php` — 4 tables: `assessments`, `gradebook_columns`, `online_test_questions`, `online_test_question_options`.
+- Models: `Assessment` (kind enum `assignment | tutorial | f2f_test | online_test`), `GradebookColumn` (kind enum `manual | participation | bonus`), `OnlineTestQuestion`, `OnlineTestQuestionOption`.
+- **manual_grade carve-out:** offline-graded gradebook entries (manual / participation / bonus) are NOT in `assessments` — they live in the separate `gradebook_columns` table. Assessments table only carries true coursework with a submission/delivery lifecycle.
+- F2F-test fields (`venue`, `allowed_materials`, `duration_minutes`) are nullable columns directly on `assessments`. Online-test fields (`attempts_allowed`, `result_release`) are also direct columns. Assignment/tutorial-specific config (submission types, group config, late penalty rules) lives in JSON `settings`.
+- Late-penalty shape: `{"grace_hours": int, "per_day_pct": int, "max_pct": int, "after_max_action": "zero" | "reject"}`.
+- Status: `draft | published | archived`. Archived is terminal in normal flow; unarchive requires IPG Admin override with audit.
+- Seed counts: 60 assessments + 15 gradebook columns (75 total gradebook-feeding entries, ~75/17/8 published/draft/archived split) + 45 online-test questions across 8 of 15 tests (the other 7 are intentional empty-state shells) + 116 MCQ options (29 MCQ × 4, 2 multi-correct).
+- Trainee submissions/attempts/responses are EXPLICITLY deferred (locked decision #13, still in force).
+
+### Unit D — IPG Leave / MC Requests + Per-Pensyarah Course-Impact Responses
+- Migration `2026_04_27_128000_create_ipg_leave_requests_schema.php` — 2 tables: `ipg_leave_requests`, `ipg_leave_request_pensyarah_responses`.
+- Models: `IpgLeaveRequest` (status `submitted | approved | rejected | withdrawn` — NO `under_review`, leave decisions don't have an investigation phase), `IpgLeaveRequestPensyarahResponse` (response `acknowledge | approve_impact | object`).
+- New config key: `leave.response_threshold_days` (default 7).
+- **Critical schema decision:** the response row stores `pensyarah_id` EXPLICITLY (not derived through `course_offering->lecturer`). Preserves who actually responded under substitute / lecturer-reassignment scenarios. See `feedback_no_derived_identity_fks.md` memory.
+- `auto_acknowledged` is an explicit bool flag (not inferred from null user_id) for the threshold-fallback case.
+- **Migration was edited post-write** to add explicit short FK constraint names (`ilrpr_request_fk`, `ilrpr_offering_fk`, `ilrpr_responded_user_fk`) — auto-generated names overflowed MySQL's 64-char limit on this long-named table. See `feedback_short_fk_constraint_names.md` memory; check any future long-named IPG migrations the same way.
+- Seed counts: 7 requests across 4 statuses + 5 kinds, 27 responses (3 auto_acknowledged, 14 approve_impact, 9 acknowledge, 4 object). 2 requests carry supporting MC documents.
+- **Service-layer behavior NOT in this unit (forward-locked):** the auto-fill of attendance status from approved leave MUST act only on null/unset attendance statuses — must NEVER overwrite a status a lecturer has already manually marked. Captured in `IpgLeaveRequest` model docblock.
+
+### Unit E — Discipline Categories + Incidents + Cases + Evidence + Witnesses
+- Migration `2026_04_27_129000_create_ipg_discipline_schema.php` — 5 tables: `discipline_categories` (lookup, with `is_active` deactivation flag), `discipline_incidents` (peer-link entity), `ipg_discipline_cases`, `ipg_discipline_case_evidence`, `ipg_discipline_case_witnesses`.
+- Models: `DisciplineCategory`, `DisciplineIncident`, `IpgDisciplineCase` (severity `minor | moderate | serious`; status `submitted | under_review | action_taken | dismissed`), `IpgDisciplineCaseEvidence`, `IpgDisciplineCaseWitness`.
+- **Linking model:** when multiple Pensyarah file separate reports on the SAME incident, all cases carry the same `incident_id`. NOT a parent-child FK chain on cases. See `feedback_model_the_event_not_the_link.md` memory.
+- Severity (incident-intrinsic) is orthogonal to `priority_flag` (queue treatment — auto-set true on serious; IPG Admin can override either direction).
+- Filer identity: `filed_by_pensyarah_id` (workflow actor) + `created_by_user_id` (audit). NO `filed_by_user_id` — would be redundant.
+- **Evidence is the most sensitive file type** in the system: defaults to `local` disk via column default, MIME stored verbatim from upload sniffing. Auth-gated downloads required (service-layer concern).
+- Witness shape: single table with both internal (`witness_user_id` FK) and external (`witness_name` + `witness_contact` text) supported; service-layer enforces "at least one of user_id or name is set."
+- Seed counts: 5 categories / 1 incident / 6 cases (1 of each status + 1 serious-priority + 1 linked pair via shared incident) / 5 evidence files / 4 witnesses (1 case has both internal AND external witnesses; 1 case has neither evidence nor witnesses).
+
+### Unit F — Wave 2 Wrap (this section)
+- No new schema. Cross-wave verification, documentation, memory cleanup.
+- **Seed-ordering bug fixed in `DatabaseSeeder.php`:** the IPG ROLE TEST ACCOUNTS block (which wires `user_id` onto Pensyarah rows) was moved BEFORE the `IpgDemoSeeder` call. Previously the test accounts were wired AFTER demo data was generated, so on a fresh seed every audit FK on demo rows resolved to NULL.
+- **Pensyarah 4 (Puan Nurul Syamiela) and Pensyarah 5 (Dr. Aminuddin Hassan) backfilled with user accounts** (`pensyarah.nurul@aiva.test`, `pensyarah.aminuddin@aiva.test`, password `password`). Eliminates the prior 10 NULL `responded_by_user_id` rows on Unit D leave responses; brings audit FKs to 100% populated on a fresh seed.
+- 4 new feedback memories saved: date cast pin, no-derived-identity FKs, short FK names, model-the-event-not-the-link.
+
+### Verified DB state at Wave 2 close
+
+```
+Wave 1: PracticumWindow=1 CourseOffering=15 TimetableSession=15
+        ObservationRubric=1 PlacementLetterTemplate=1
+        ApprovedPracticumSchool=1 Placements=4
+
+Wave 2 Unit A: CourseMaterialCategory=6 CourseMaterial=45 CourseMaterialFile=45
+Wave 2 Unit B: Assessment=60 GradebookColumn=15
+               OnlineTestQuestion=45 OnlineTestQuestionOption=116
+Wave 2 Unit C: IpgAttendanceSession=60 IpgAttendanceRecord=180
+Wave 2 Unit D: IpgLeaveRequest=7 IpgLeaveRequestPensyarahResponse=27
+Wave 2 Unit E: DisciplineCategory=5 DisciplineIncident=1 IpgDisciplineCase=6
+               IpgDisciplineCaseEvidence=5 IpgDisciplineCaseWitness=4
+
+Total IPG entities seeded across Wave 2: 561 rows
+Total users now: 12 (was 10 pre-Wave-2; +2 backfill)
+```
+
+### School-mode regression check (Wave 2 close)
+
+- Schools=1 Students=20 SchoolClasses=10 Enrollments=20 — all unchanged from Wave 1 close.
+- `PracticumProjection::activeForSchool(1, today)` returns 2 visible trainees (active + confirmed placements); `lettersForSchool` returns 2 letters. Cross-mode projection still works.
+- `Placement::scopeVisibleTo()` correctly scopes: `pensyarah@aiva.test` (regular Pensyarah) sees 1 placement (their assigned trainee); `ipg@aiva.test` (IPG Admin) sees all 4. Per-Pensyarah scope intact.
+
+### Build state
+
+Last clean asset build (end of Unit E): 67.20 KB CSS / 11.98 KB gz / 1.19s. **Note:** `node_modules/` was wiped at some point during the Unit F session (cause unknown — was present for 4 earlier successful builds). Wrap touched only PHP and config files, so the asset bundle is byte-identical to the Unit E baseline; no source-side change to verify. To restore local dev: `npm install && npm run build`.
+
+## W2.2 — Decisions locked in during Wave 2
+
+These join (do NOT replace) the Wave 1 locked decisions in §2 above. Do not relitigate without explicit user re-approval.
+
+14. **Course material visibility default = `hidden_draft`.** Asymmetric risk — accidental publish is worse than accidental hide.
+15. **Implicit cohort-wide enrollment for v1.** PISMP cohort = course enrollment unit. No `course_enrollments` join table; add when first elective-bearing program lands.
+16. **Per-session attendance distinct from school-mode daily snapshots.** `ipg_attendance_*` tables; never reuse School mode's `attendance_snapshots`.
+17. **`locked_at` columns store explicitly** (not computed from threshold) so IPG Admin can override with audit. Applies to `ipg_attendance_sessions.locked_at` and similar future patterns.
+18. **manual_grade carved out of `assessments`** into separate `gradebook_columns` table. Assessments are coursework (with submission lifecycle); gradebook columns are offline-graded entries.
+19. **Late penalty shape locked:** `{"grace_hours": int, "per_day_pct": int, "max_pct": int, "after_max_action": "zero" | "reject"}`.
+20. **Group submission shape locked:** `{"enabled": bool, "min_size": int, "max_size": int, "formation": "lecturer_assigned" | "self_formed", "per_member_grade_adjustment": bool}`.
+21. **Leave status enum has NO `under_review`.** Leave decisions don't have a meaningful investigation phase — discipline cases do. Status: `submitted | approved | rejected | withdrawn`.
+22. **Pensyarah identity FK stored explicitly** on responses / actor columns; never derived through `course_offering->lecturer`. Same applies to all "who did X" columns.
+23. **Discipline severity is orthogonal to priority_flag.** Severity describes the incident; priority describes queue treatment. Either can be flipped independently.
+24. **Discipline case linking via shared `incident_id`** (entity-modeled), NOT parent-child FK or symmetric link table.
+25. **Discipline category soft-deactivation** via `is_active=false` (preserves historical references); hard delete is restricted at the FK level.
+26. **`response_threshold_at` snapshot** stored on each request row at creation time (not computed from config + created_at); IPG Admin can override per-request.
+27. **Eloquent date casts pinned to `'date:Y-m-d'`** on any DATE column used as part of an `updateOrCreate` key. Bare `'date'` causes silent storage/lookup format mismatch.
+28. **Explicit short FK / index names** required on long-named IPG tables to fit MySQL's 64-char limit.
+
+## W2.3 — Test accounts (refreshed)
+
+| Email | Role | Notes |
+|---|---|---|
+| `admin@aiva.test` | MOE superadmin | Unchanged from Wave 1. |
+| `bpg@aiva.test` | BPG | Unchanged. |
+| `ipg@aiva.test` | IPG Admin | Unchanged. |
+| `kj.bm@aiva.test` | Ketua Jabatan (Bahasa Melayu) | Unchanged. |
+| `penyelaras@aiva.test` | Penyelaras Praktikum | Unchanged. |
+| `pensyarah@aiva.test` | Pensyarah (regular, Wong Kit Mun) | Unchanged. |
+| `pensyarah.nurul@aiva.test` | **NEW** — Pensyarah (Puan Nurul Syamiela) | Backfilled in Unit F. |
+| `pensyarah.aminuddin@aiva.test` | **NEW** — Pensyarah (Dr. Aminuddin Hassan) | Backfilled in Unit F. |
+| `trainee@aiva.test` | Guru Pelatih | Unchanged. |
+| `school@aiva.test` | School Admin (SMK Demo) | Unchanged. |
+| `teacher@aiva.test` | Teacher | Unchanged. |
+
+All passwords: `password`.
+
+## W2.4 — Open ambiguities for Wave 3+
+
+These are referenced or implied by Wave 1/2 work but explicitly NOT in v1 of any wave shipped so far. Any future planning round should treat these as unsettled:
+
+- **Trainee-side workflows.** All Pensyarah workflows (Hat 1, Hat 2, Hat 3) have been schema-modeled. Trainee workflows (submit assignment, submit logbook, submit self-evaluation, take online test) are referenced extensively but not designed. This is the natural Wave 3 candidate.
+- **Online test attempts/responses tables.** Schema deferred per locked decision #13. Will need: `online_test_attempts` (per trainee per attempt), `online_test_attempt_responses` (per question), grading roll-up.
+- **Assignment submissions tables.** Same pattern — `assignment_submissions` (per trainee or per group), `assignment_submission_files`, `assignment_submission_grades`.
+- **Trainee self-evaluation.** Referenced by W2.5 (Supervisor final practicum evaluation), explicitly deferred.
+- **Service-layer wiring NOT done in any wave so far:**
+  - Auto-acknowledge worker for `ipg_leave_request_pensyarah_responses` when `response_threshold_at` elapses.
+  - Auto-excuse-from-approved-leave on attendance — must NOT overwrite manually-set statuses (locked).
+  - Auto-set `priority_flag` on discipline cases when `severity=serious`.
+  - Auto-lock attendance sessions past `late_edit_threshold_days`.
+- **Permissions / role-based visibility refinement** beyond `Placement::scopeVisibleTo()` — most other models still default to "Superadmin sees everything" per Wave 1 decision. Will need scopes when finer-grained role visibility ships.
+- **Notifications.** Still deferred (Wave 1 locked decision #7). Workflows reference notifications throughout.
+- **v2 backlog (capture for later, NOT for any v1 wave):** `family` leave kind splits into `family + bereavement` per Malaysian academic context.
+
+## W2.5 — Files modified during Wave 2
+
+### New migrations (5)
+- `database/migrations/2026_04_27_125000_create_course_materials_schema.php`
+- `database/migrations/2026_04_27_126000_create_ipg_attendance_schema.php`
+- `database/migrations/2026_04_27_127000_create_assessments_schema.php`
+- `database/migrations/2026_04_27_128000_create_ipg_leave_requests_schema.php` (later edited for short FK names)
+- `database/migrations/2026_04_27_129000_create_ipg_discipline_schema.php`
+
+### New models (17)
+`CourseMaterialCategory`, `CourseMaterial`, `CourseMaterialFile`,
+`IpgAttendanceSession`, `IpgAttendanceRecord`,
+`Assessment`, `GradebookColumn`, `OnlineTestQuestion`, `OnlineTestQuestionOption`,
+`IpgLeaveRequest`, `IpgLeaveRequestPensyarahResponse`,
+`DisciplineCategory`, `DisciplineIncident`, `IpgDisciplineCase`, `IpgDisciplineCaseEvidence`, `IpgDisciplineCaseWitness`.
+(Note: 16 distinct, plus `Trainee` / `Pensyarah` / `CourseOffering` / `TimetableSession` were heavily extended — see "modified" list below.)
+
+### Modified existing models
+- `app/Models/Pensyarah.php` — `MAX_TRAINEE_LOAD` constant removed; `maxTraineeLoad()` static accessor reads `config('ipg.pensyarah.max_trainee_load')`. Added `recordedAttendanceSessions()`, `leaveRequestResponses()`, `filedDisciplineCases()` hasMany relations.
+- `app/Models/CourseOffering.php` — Added `materials()`, `attendanceSessions()`, `assessments()`, `gradebookColumns()`, `leaveRequestResponses()` hasMany relations.
+- `app/Models/TimetableSession.php` — Added `attendanceSessions()` hasMany. Docblock updated to note distinction from `IpgAttendanceSession` (recurring slot vs held instance).
+- `app/Models/Trainee.php` — Added `attendanceRecords()`, `leaveRequests()`, `disciplineCases()` hasMany relations.
+
+### Config
+- `config/ipg.php` — **NEW FILE.** Keys: `pensyarah.max_trainee_load`, `attendance.late_edit_threshold_days`, `leave.response_threshold_days`, `uploads.course_materials.disk` / `max_file_size_mb` / `allowed_mime_types`.
+
+### Seeder
+- `database/seeders/IpgDemoSeeder.php` — heavily extended: 5 new seed methods (`seedCourseMaterialCategories`, `seedCourseMaterials`, `seedIpgAttendance`, `seedAssessments`, `seedDisciplineCategories`, `seedIpgLeaveRequests`, `seedIpgDisciplineCases`) plus helper methods. ~700+ new lines.
+- `database/seeders/DatabaseSeeder.php` — IPG ROLE TEST ACCOUNTS block moved BEFORE `IpgDemoSeeder` call (seed-ordering fix). Added Pensyarah 4 + 5 user account creation.
+
+### Documentation written
+- `docs/CLAUDE_CODE_HANDOFF.md` — this Wave 2 addendum.
+- 4 new feedback memory files in `~/.claude/projects/.../memory/`:
+  - `feedback_eloquent_date_cast_pin.md`
+  - `feedback_no_derived_identity_fks.md`
+  - `feedback_short_fk_constraint_names.md`
+  - `feedback_model_the_event_not_the_link.md`
+
+## W2.6 — Critical correctness invariants (Wave 2 close)
+
+In addition to all Wave 1 invariants in §9 above:
+
+- **Idempotent reseed of all Wave 2 demo data.** All 5 seed methods use `updateOrCreate` / `firstOrCreate` keyed on natural keys. Verified by running `db:seed --force` twice; counts stable.
+- **No School-mode regression.** Confirmed at Wave 2 close: school students/classes/enrollments unchanged; `PracticumProjection` still returns visible trainees and placement letters at host schools; trainee tag projection still works.
+- **Per-Pensyarah scope (§6.2 from Wave 1) still intact.** Verified `pensyarah@aiva.test` sees scoped placements; IPG Admin sees full campus.
+- **Audit FK columns 100% populated** on Wave 2 demo rows (after Unit F's Pensyarah 4+5 backfill and seed-ordering fix). The only NULL `responded_by_user_id` values on `ipg_leave_request_pensyarah_responses` are the 3 auto_acknowledged rows (correct by design).
+- **Cross-mode FKs unchanged.** `approved_practicum_schools.school_id` is still the only IPG → School-mode hard FK.
+
+*End of Wave 2 addendum.*
