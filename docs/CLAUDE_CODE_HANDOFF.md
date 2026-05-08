@@ -384,6 +384,7 @@ These join (do NOT replace) the Wave 1 locked decisions in §2 above. Do not rel
 | Email | Role | Notes |
 |---|---|---|
 | `admin@aiva.test` | MOE superadmin | Unchanged from Wave 1. |
+| `moe-poc@aiva.test` | **NEW** — MOE POC Demo viewer (`role:moe_viewer`) | School-side ministry parallel to BPG. Sees MOE overview + all schools + every School-mode module. **NO IPG access whatsoever:** mode switcher renders zero options (hidden entirely), `/ipg/*` routes return 403, `/bpg/*` routes return 403. Defaults to MOE overview after login. |
 | `bpg@aiva.test` | BPG | Unchanged. |
 | `ipg@aiva.test` | IPG Admin | Unchanged. |
 | `kj.bm@aiva.test` | Ketua Jabatan (Bahasa Melayu) | Unchanged. |

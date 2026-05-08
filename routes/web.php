@@ -149,7 +149,10 @@ Route::middleware('auth')->group(function () {
     });
 
     // ============ MOE MODE ============
-    Route::prefix('moe')->name('moe.')->middleware('role:moe_admin')->group(function () {
+    // moe_viewer is the school-side ministry parallel to BPG on the IPG side —
+    // full ministry-level oversight of the School modules but explicitly NO
+    // IPG / BPG access (those route groups don't whitelist moe_viewer).
+    Route::prefix('moe')->name('moe.')->middleware('role:moe_admin,moe_viewer')->group(function () {
         Route::get('/overview', [M\OverviewController::class, 'index'])->name('overview');
         Route::get('/schools', [M\SchoolsController::class, 'index'])->name('schools');
         Route::post('/schools/select', [M\SchoolsController::class, 'select'])->name('schools.select');

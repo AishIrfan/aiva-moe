@@ -50,6 +50,15 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Cikgu Siti', 'password' => Hash::make('password'), 'role' => User::ROLE_TEACHER, 'mode' => 'school', 'school_id' => $school->id]
         );
 
+        // POC demo viewer — ministry-level oversight on the School side
+        // (parallel to BPG on the IPG side), with IPG mode explicitly disabled.
+        // Sees MOE overview + all schools + every School-mode module; cannot
+        // see, switch to, or hit any IPG route.
+        User::firstOrCreate(
+            ['email' => 'moe-poc@aiva.test'],
+            ['name' => 'MOE POC Demo', 'password' => Hash::make('password'), 'role' => User::ROLE_MOE_VIEWER, 'mode' => 'moe']
+        );
+
         Term::firstOrCreate(['school_id' => $school->id, 'academic_year' => '2026', 'name' => 'Term 1'], ['start_date' => '2026-01-05', 'end_date' => '2026-05-30', 'is_current' => true]);
         foreach ([['P1','07:30','08:30'],['P2','08:30','09:30'],['P3','09:30','10:30'],['P4','10:30','11:30'],['P5','11:30','12:30']] as $i => $p) {
             Period::firstOrCreate(['school_id' => $school->id, 'label' => $p[0]], ['start_time' => $p[1], 'end_time' => $p[2], 'order' => $i + 1]);

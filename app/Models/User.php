@@ -15,6 +15,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     public const ROLE_MOE_ADMIN     = 'moe_admin';
+    public const ROLE_MOE_VIEWER    = 'moe_viewer';
     public const ROLE_SCHOOL_ADMIN  = 'school_admin';
     public const ROLE_IPG_ADMIN     = 'ipg_admin';
     public const ROLE_BPG_ADMIN     = 'bpg_admin';
@@ -54,6 +55,7 @@ class User extends Authenticatable
     public function pensyarah(): HasOne { return $this->hasOne(Pensyarah::class); }
 
     public function isMoe(): bool          { return $this->role === self::ROLE_MOE_ADMIN; }
+    public function isMoeViewer(): bool    { return $this->role === self::ROLE_MOE_VIEWER; }
     public function isSchoolAdmin(): bool  { return $this->role === self::ROLE_SCHOOL_ADMIN; }
     public function isIpg(): bool          { return $this->role === self::ROLE_IPG_ADMIN; }
     public function isBpg(): bool          { return $this->role === self::ROLE_BPG_ADMIN; }
@@ -74,6 +76,7 @@ class User extends Authenticatable
     public function defaultMode(): string
     {
         if ($this->isMoe())               return 'moe';
+        if ($this->isMoeViewer())         return 'moe';
         if ($this->livesInIpgMode())      return 'ipg';
         return 'school';
     }
