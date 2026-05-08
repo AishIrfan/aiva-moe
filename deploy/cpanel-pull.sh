@@ -3,6 +3,15 @@
 # Run on the server (cPanel Terminal / SSH) inside the repo directory.
 # Pulls latest main, installs deps, migrates, and refreshes caches.
 # Usage: bash deploy/cpanel-pull.sh
+#
+# If you see errors like:
+#     deploy/cpanel-pull.sh: line 6: $'\r': command not found
+#     : invalid option name: line 7: set: pipefail
+# the file has CRLF line endings (typically introduced by editing via
+# cPanel File Manager or uploading via FTP in text mode). One-time fix:
+#     sed -i 's/\r$//' deploy/cpanel-pull.sh && bash deploy/cpanel-pull.sh
+# After that, the script's `git reset --hard origin/main` below keeps
+# the file synced to git's canonical LF version on every successful run.
 
 set -euo pipefail
 
