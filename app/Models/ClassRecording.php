@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
@@ -88,6 +89,12 @@ class ClassRecording extends Model
     public function preservedBy(): BelongsTo { return $this->belongsTo(User::class, 'preserved_by_user_id'); }
     public function createdBy(): BelongsTo   { return $this->belongsTo(User::class, 'created_by_user_id'); }
     public function referencedBy(): MorphTo  { return $this->morphTo('referenced_by'); }
+
+    /** Audit-log entries pointing at this recording (auditable polymorph). */
+    public function auditLogs(): MorphMany
+    {
+        return $this->morphMany(AuditLog::class, 'auditable');
+    }
 
     // -------- State predicates --------
 

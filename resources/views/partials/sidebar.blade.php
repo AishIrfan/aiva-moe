@@ -70,6 +70,10 @@
             ['label' => 'Cameras',                  'route' => 'school.cameras',      'icon' => $i['camera']],
             ['label' => 'Relationships',            'route' => 'school.relationship', 'icon' => $i['network']],
             ['label' => 'Analytics',                'route' => 'school.analytics',    'icon' => $i['trending']],
+            // Class Recording is opt-in per school (CLASS_RECORDING_CHECKLIST §1, §3).
+            // The entry is filtered out below when class_recording_enabled = false
+            // for the active school. IPG mode never sees this group at all.
+            ['label' => 'Class Recording',          'route' => 'school.class-recordings.index', 'icon' => $i['monitorPlay'], 'requiresSetting' => 'class_recording_enabled'],
         ],
         'Management' => [
             ['label' => 'Events',                   'route' => 'school.events-management',          'icon' => $i['ticket']],
@@ -80,6 +84,18 @@
             ['label' => 'Settings',                 'route' => 'school.settings',                   'icon' => $i['gear']],
         ],
     ];
+
+    // Filter out per-school opt-in entries (e.g. Class Recording) for schools
+    // where the corresponding setting is disabled. Falls open for items without
+    // a `requiresSetting` key. Done after the static array so the schoolGroups
+    // structure stays declarative above.
+    foreach ($schoolGroups as $groupName => $items) {
+        $schoolGroups[$groupName] = array_values(array_filter($items, function ($item) use ($schoolId) {
+            if (empty($item['requiresSetting'])) return true;
+            if (! $schoolId) return false;
+            return (bool) \App\Models\Setting::schoolValue($schoolId, $item['requiresSetting'], false);
+        }));
+    }
 
     $moeGroups = [
         'Ministry' => [

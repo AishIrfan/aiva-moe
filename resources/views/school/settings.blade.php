@@ -65,6 +65,60 @@
         </form>
     </x-card>
 
+    {{-- Class Recording (CLASS_RECORDING_CHECKLIST §10.4) --}}
+    <x-card title="Class Recording" subtitle="classroom video — opt-in per school">
+        <form method="POST" action="{{ route('school.settings.update') }}" class="space-y-3 text-sm">
+            @csrf
+            <input type="hidden" name="class_recording_form_submitted" value="1"/>
+
+            <div class="px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+                <strong>Compliance reminder:</strong> recording minors in classrooms is subject to PDPA 2010 and school policy.
+                Before enabling, confirm: notice posted, parental consent (where required), retention policy aligned, DSAR procedure in place, incident response plan ready.
+            </div>
+
+            <label class="flex items-start gap-3 p-3 rounded-lg border border-zinc-200 hover:border-zinc-300 transition cursor-pointer">
+                <input type="checkbox" name="class_recording_enabled" value="1"
+                       @checked($settings['class_recording']['class_recording_enabled'] ?? false)
+                       class="mt-0.5 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"/>
+                <div>
+                    <div class="font-medium text-zinc-900">Enable Class Recording</div>
+                    <div class="text-[11px] text-zinc-500 mt-0.5">When enabled, the Class Recording entry appears under Safety &amp; Incidents and uploads are accepted. When disabled, all routes 403 — even direct URL access.</div>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 p-3 rounded-lg border border-rose-200 bg-rose-50/40 hover:border-rose-300 transition cursor-pointer">
+                <input type="checkbox" name="class_recording_audio_enabled" value="1"
+                       @checked($settings['class_recording']['class_recording_audio_enabled'] ?? false)
+                       class="mt-0.5 rounded border-zinc-300 text-rose-600 focus:ring-rose-500"/>
+                <div>
+                    <div class="font-medium text-zinc-900">Enable audio recording</div>
+                    <div class="text-[11px] text-zinc-700 mt-0.5"><strong class="text-rose-700">Higher privacy weight.</strong> Audio captures conversations between students and teachers. Confirm explicit consent and a defensible lawful basis before turning this on. Even when off, v1's manual upload pipeline cannot reliably reject audio-bearing files at the server — uploaders are warned but should self-police.</div>
+                </div>
+            </label>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[10px] uppercase tracking-[0.14em] font-semibold text-zinc-500 block mb-1">Retention (days)</label>
+                    <input type="number" name="class_recording_retention_days"
+                           min="{{ \App\Models\ClassRecording::RETENTION_MIN_DAYS }}"
+                           max="{{ \App\Models\ClassRecording::RETENTION_MAX_DAYS }}"
+                           value="{{ $settings['class_recording']['class_recording_retention_days'] ?? \App\Models\ClassRecording::DEFAULT_RETENTION_DAYS }}"
+                           class="w-full bg-zinc-50 border border-zinc-200 rounded-md px-3 py-1.5 font-mono tabular-nums focus:outline-none focus:bg-white focus:border-zinc-300"/>
+                    <div class="text-[11px] text-zinc-400 mt-1">{{ \App\Models\ClassRecording::RETENTION_MIN_DAYS }}–{{ \App\Models\ClassRecording::RETENTION_MAX_DAYS }} days; auto-delete after expiry unless preserved</div>
+                </div>
+                <div>
+                    <label class="text-[10px] uppercase tracking-[0.14em] font-semibold text-zinc-500 block mb-1">Max file size (MB)</label>
+                    <input type="number" name="class_recording_max_file_size_mb" min="1" max="8192"
+                           value="{{ $settings['class_recording']['class_recording_max_file_size_mb'] ?? \App\Models\ClassRecording::DEFAULT_MAX_SIZE_MB }}"
+                           class="w-full bg-zinc-50 border border-zinc-200 rounded-md px-3 py-1.5 font-mono tabular-nums focus:outline-none focus:bg-white focus:border-zinc-300"/>
+                    <div class="text-[11px] text-zinc-400 mt-1">app-layer cap; PHP upload_max_filesize still applies</div>
+                </div>
+            </div>
+
+            <button class="inline-flex items-center justify-center bg-zinc-900 text-white rounded-md px-3 py-1.5 font-medium hover:bg-zinc-800 active:translate-y-[1px] transition">Save</button>
+        </form>
+    </x-card>
+
     {{-- Retention --}}
     <x-card title="Retention" subtitle="how long camera footage and events are kept">
         <form method="POST" action="{{ route('school.settings.update') }}" class="space-y-3 text-sm">
