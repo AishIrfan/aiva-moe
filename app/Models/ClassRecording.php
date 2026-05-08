@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -113,14 +113,14 @@ class ClassRecording extends Model
         return (bool) $this->preserved;
     }
 
-    public function isPastRetention(?Carbon $now = null): bool
+    public function isPastRetention(?CarbonInterface $now = null): bool
     {
         $now ??= now();
         return $this->retention_expires_at !== null && $this->retention_expires_at->lt($now);
     }
 
     /** True iff this recording is a candidate for the daily retention pruner. */
-    public function isPrunable(?Carbon $now = null): bool
+    public function isPrunable(?CarbonInterface $now = null): bool
     {
         return ! $this->isPreserved()
             && ! $this->isArchived()
@@ -134,7 +134,7 @@ class ClassRecording extends Model
      * Uses the recording's started_at (NOT now()) so re-running with the same
      * row reproduces the same path — important for the seeder.
      */
-    public static function buildStoragePath(int $schoolId, string $fileUuid, ?Carbon $when = null, string $extension = 'mp4'): string
+    public static function buildStoragePath(int $schoolId, string $fileUuid, ?CarbonInterface $when = null, string $extension = 'mp4'): string
     {
         $when ??= now();
         return sprintf(

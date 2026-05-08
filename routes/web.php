@@ -293,4 +293,11 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+// Smartboard upload — SCAFFOLDING for v2 (CLASS_RECORDING_CHECKLIST §5.2).
+// Lives outside the `auth` group: smartboard devices authenticate via bearer
+// token, not session cookies. CSRF is non-applicable to a token-authenticated
+// machine endpoint, so we skip the `web` middleware that would attach CSRF.
+Route::post('/api/v1/class-recordings/smartboard-upload', [App\Http\Controllers\School\ClassRecordingController::class, 'smartboardUpload'])
+    ->name('api.class-recordings.smartboard-upload');
+
 require __DIR__.'/auth.php';

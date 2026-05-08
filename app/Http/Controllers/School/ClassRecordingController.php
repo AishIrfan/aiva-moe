@@ -399,6 +399,48 @@ class ClassRecordingController extends SchoolContextController
         abort(403, 'You are not authorized to upload recordings.');
     }
 
+    // ====================================================================
+    // Smartboard upload — SCAFFOLDING per §5.2.
+    //
+    // Real smartboard hardware integration is OUT OF SCOPE for v1. This
+    // endpoint exists so future integrators have a target shape to build
+    // against — behavior may change before real hardware is wired. v1 fails
+    // closed: when no IPG_SMARTBOARD_TOKEN is configured, the endpoint
+    // 401s ALL callers regardless of input.
+    //
+    // Auth: shared bearer token via config('class_recording.smartboard.token').
+    // For production, swap for Sanctum personal access tokens, mTLS, or
+    // device certs — choose based on hardware capabilities.
+    // ====================================================================
+    public function smartboardUpload(\Illuminate\Http\Request $request)
+    {
+        $expected = config('class_recording.smartboard.token');
+        $provided = $request->bearerToken();
+        if (empty($expected) || empty($provided) || ! hash_equals((string) $expected, (string) $provided)) {
+            abort(401, 'Invalid or missing smartboard bearer token.');
+        }
+
+        $request->validate([
+            'school_id'             => ['required', 'integer', 'exists:schools,id'],
+            'school_class_id'       => ['nullable', 'integer', 'exists:school_classes,id'],
+            'subject'               => ['nullable', 'string', 'max:255'],
+            'teacher_user_id'       => ['required', 'integer', 'exists:users,id'],
+            'started_at'            => ['required', 'date'],
+            'ended_at'              => ['nullable', 'date', 'after_or_equal:started_at'],
+            'smartboard_device_id'  => ['required', 'string', 'max:128'],
+            'file'                  => ['required', 'file', 'mimetypes:video/mp4'],
+        ]);
+
+        // v1 stub: validates the request shape so integrators can develop
+        // against a stable contract, but does NOT actually persist anything.
+        // Wire real persistence (mirroring store()) once hardware specifics
+        // are settled — at that point this stub returns 201 with the row id.
+        return response()->json([
+            'status'  => 'not_implemented',
+            'message' => 'Smartboard upload endpoint is scaffolded for v2. Use the manual upload UI under /school/class-recordings/create for v1.',
+        ], 501);
+    }
+
     private function assertRecordingsEnabled(int $schoolId): void
     {
         if (! ClassRecording::isEnabledForSchool($schoolId)) {

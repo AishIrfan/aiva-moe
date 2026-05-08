@@ -16,3 +16,11 @@ Schedule::command('attendance:seed-today')
 // Queue retry of failed jobs every 10 min (for FR image flush etc.)
 Schedule::command('queue:work --stop-when-empty')
     ->everyTenMinutes()->withoutOverlapping();
+
+// Daily class-recording retention pruner at 02:00 — files past retention
+// (preserved are exempt) get deleted from disk and rows flipped to archived.
+// CLASS_RECORDING_CHECKLIST §9.
+Schedule::command('class-recordings:prune')
+    ->dailyAt('02:00')
+    ->timezone('Asia/Kuala_Lumpur')
+    ->withoutOverlapping();

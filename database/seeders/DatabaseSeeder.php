@@ -308,5 +308,10 @@ class DatabaseSeeder extends Seeder
         // Runs AFTER test accounts so all Pensyarahs have user_id populated
         // before dependent rows are seeded.
         $this->call(IpgDemoSeeder::class);
+
+        // School-mode Class Recording demo (CLASS_RECORDING_CHECKLIST §11).
+        // Idempotent; enables the feature on the demo school and seeds 6
+        // recordings covering preserved / near-expiry / archived scenarios.
+        $this->call(ClassRecordingDemoSeeder::class);
     }
 }
