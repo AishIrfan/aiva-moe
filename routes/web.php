@@ -146,6 +146,21 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings', [S\SettingsController::class, 'index'])->name('settings');
         Route::post('/settings', [S\SettingsController::class, 'update'])->name('settings.update');
         Route::post('/settings/sensestudio/test', [S\SettingsController::class, 'testSenseStudio'])->name('settings.sensestudio.test');
+
+        // Class Recording (CLASS_RECORDING_CHECKLIST §1, §5–§7).
+        // Opt-in per school via Setting `class_recording_enabled`. Disabled
+        // schools 403 here regardless of role — controller-level enforcement.
+        Route::prefix('class-recordings')->name('class-recordings.')->group(function () {
+            Route::get('/',                          [S\ClassRecordingController::class, 'index'])->name('index');
+            Route::get('/create',                    [S\ClassRecordingController::class, 'create'])->name('create');
+            Route::post('/',                         [S\ClassRecordingController::class, 'store'])->name('store');
+            Route::get('/{recording}',               [S\ClassRecordingController::class, 'show'])->name('show');
+            Route::get('/{recording}/stream',        [S\ClassRecordingController::class, 'stream'])->name('stream');
+            Route::get('/{recording}/download',      [S\ClassRecordingController::class, 'download'])->name('download');
+            Route::post('/{recording}/preserve',     [S\ClassRecordingController::class, 'preserve'])->name('preserve');
+            Route::post('/{recording}/unpreserve',   [S\ClassRecordingController::class, 'unpreserve'])->name('unpreserve');
+            Route::delete('/{recording}',            [S\ClassRecordingController::class, 'destroy'])->name('destroy');
+        });
     });
 
     // ============ MOE MODE ============
