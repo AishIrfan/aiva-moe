@@ -34,6 +34,9 @@ php artisan view:clear
 echo "▶ Running migrations…"
 php artisan migrate --force
 
+echo "▶ Seeding (idempotent — firstOrCreate / updateOrCreate throughout)…"
+php artisan db:seed --force
+
 echo "▶ Re-caching for production…"
 php artisan config:cache
 php artisan route:cache
