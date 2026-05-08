@@ -27,8 +27,10 @@ abstract class SchoolContextController extends Controller
             return $school;
         }
 
-        // MOE admins should pick a school before entering school mode.
-        if ($request->user()?->isMoe()) {
+        // MOE-tier users (moe_admin or moe_viewer POC role) should pick a
+        // school via the MOE picker before entering school mode.
+        $u = $request->user();
+        if ($u?->isMoe() || $u?->isMoeViewer()) {
             throw new \Illuminate\Http\Exceptions\HttpResponseException(
                 redirect()->route('moe.schools')->with('status', 'Pick a school to enter school mode.')
             );

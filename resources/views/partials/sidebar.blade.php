@@ -250,10 +250,10 @@
             $user->isMoe()                                                         => ['label' => 'MOE · Superadmin',       'tone' => 'emerald', 'detail' => null],
             default                                                                => null,
         };
-    } elseif ($mode === 'moe' && $user?->isMoe()) {
+    } elseif ($mode === 'moe' && ($user?->isMoe() || $user?->isMoeViewer())) {
         $groups += $moeGroups;
         if ($schoolId) $groups += $schoolGroups;
-    } elseif ($user?->isMoe()) {
+    } elseif ($user?->isMoe() || $user?->isMoeViewer()) {
         $groups += $moeGroups;
         if ($schoolId) $groups += $schoolGroups;
     } else {
@@ -313,7 +313,7 @@
                 @endif
             </div>
         @endif
-    @elseif ($user?->isMoe() && ! $schoolId)
+    @elseif (($user?->isMoe() || $user?->isMoeViewer()) && ! $schoolId)
         <a href="{{ route('moe.schools') }}" class="mx-3 mt-3 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900 hover:border-amber-300 transition">
             <svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">{!! $i['compass'] !!}</svg>
             <div class="leading-snug">
@@ -321,7 +321,7 @@
                 <div class="text-amber-800/70 mt-0.5">Pick one to unlock school navigation →</div>
             </div>
         </a>
-    @elseif ($schoolName && $user?->isMoe())
+    @elseif ($schoolName && ($user?->isMoe() || $user?->isMoeViewer()))
         <div class="mx-3 mt-3 px-3 py-2 rounded-lg border border-zinc-200 bg-zinc-50/80 text-xs">
             <div class="text-[10px] uppercase tracking-wider text-zinc-400 font-medium">Active school</div>
             <div class="text-zinc-900 truncate font-medium mt-0.5">{{ $schoolName }}</div>
