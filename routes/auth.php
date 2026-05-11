@@ -54,6 +54,12 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+    // Accept GET in addition to POST so typing /logout in the URL bar works.
+    // CSRF only applies to state-changing methods (POST/PUT/PATCH/DELETE), so
+    // GET bypasses the 419 page-expired error. The TokenMismatchException
+    // handler in bootstrap/app.php also catches stale POST /logout submissions
+    // (e.g. session expired between page load and click) and redirects them
+    // to /login instead of showing the 419 page.
+    Route::match(['GET', 'POST'], 'logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });
