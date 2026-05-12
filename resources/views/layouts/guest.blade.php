@@ -62,8 +62,19 @@
             </span>
         </a>
 
-        {{-- Card stays untouched: same white bg, zinc border, rounded-2xl, shadow-pop. --}}
-        <div class="w-full max-w-md bg-white border border-zinc-200 rounded-2xl shadow-pop overflow-hidden">
+        {{--
+            Card: opaque white + zinc border on register/password-reset (clean
+            paper look against a flat zinc-50 body). On /login it switches to
+            a liquid-glass surface — translucent white tint, heavy backdrop
+            blur, soft inner highlight ring, deep drop shadow — so the
+            classroom video shows through softly while form text stays crisp.
+            Structure / padding / rounded corners are identical to the
+            non-login version.
+        --}}
+        <div class="w-full max-w-md rounded-2xl overflow-hidden
+                    {{ request()->routeIs('login')
+                        ? 'bg-white/65 backdrop-blur-2xl border border-white/50 shadow-2xl shadow-black/40 ring-1 ring-inset ring-white/40'
+                        : 'bg-white border border-zinc-200 shadow-pop' }}">
             <div class="p-6 sm:p-8">
                 {{ $slot }}
             </div>
