@@ -43,6 +43,18 @@ php artisan route:cache
 php artisan view:cache
 php artisan event:cache || true
 
+# Force OPcache to revalidate bootstrap + config files. cPanel's PHP-FPM
+# OPcache often holds old bytecode after a git pull, so changes to
+# bootstrap/app.php or any config/*.php don't take effect on the live app
+# until OPcache expires or FPM restarts. Updating mtime triggers the
+# validate-timestamps re-check (opcache.validate_timestamps=1 is the
+# typical default; if disabled on this host, FPM must be restarted manually).
+echo "▶ Touching bootstrap + config files to invalidate OPcache…"
+find bootstrap config -name '*.php' -exec touch {} +
+# Best-effort opcache_reset via CLI — only clears the CLI's OPcache (not
+# FPM's), but harmless and may help if FPM and CLI share an OPcache.
+php -r 'if (function_exists("opcache_reset")) { opcache_reset(); echo "  CLI opcache_reset called\n"; } else { echo "  opcache not loaded in CLI\n"; }'
+
 echo "▶ Storage symlink…"
 php artisan storage:link || true
 

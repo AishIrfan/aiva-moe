@@ -23,20 +23,43 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // Bounce stale CSRF (419) on auth endpoints straight to the login
         // page instead of showing the unhelpful 419 page-expired view.
-        //  - /logout : user intent is clear and logout is non-destructive,
-        //              so we force the logout server-side and redirect.
-        //  - /login  : stale form (e.g. left open in another tab) — show a
-        //              fresh login form with a new CSRF token.
+        // On BOTH /login and /logout we invalidate + regenerate the session
+        // so the redirect's Set-Cookie carries a fresh laravel_session +
+        // matching XSRF-TOKEN; the next GET renders a form whose <meta
+        // name="csrf-token"> matches what the cookie holds. Without this
+        // the redirect would chain back into another stale-token error.
         $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
-            if ($request->is('logout')) {
+            $isLogout = $request->is('logout');
+            $isLogin  = $request->is('login');
+
+            if (! $isLogout && ! $isLogin) {
+                return null; // default 419 page for non-auth routes
+            }
+
+            if ($isLogout) {
                 \Illuminate\Support\Facades\Auth::guard('web')->logout();
+            }
+
+            // Hard refresh the session so the response sets a fresh cookie.
+            // hasSession() guards against the edge case where StartSession
+            // middleware didn't run (shouldn't happen on web group, but safe).
+            if ($request->hasSession()) {
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
-                return redirect()->route('login');
             }
-            if ($request->is('login')) {
-                return redirect()->route('login');
+
+            $redirect = redirect()->route('login');
+
+            // Preserve the email field on /login so the user doesn't retype.
+            // password / _token deliberately dropped.
+            if ($isLogin) {
+                $redirect = $redirect->withInput(
+                    $request->except(['password', 'password_confirmation', '_token'])
+                );
             }
-            return null; // default 419 page for other routes
+
+            // no-store: keep the browser from caching the redirect chain so
+            // a stuck-cached 419 from before this handler shipped clears out.
+            return $redirect->header('Cache-Control', 'no-store, max-age=0');
         });
     })->create();
