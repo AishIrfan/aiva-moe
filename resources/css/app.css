@@ -235,7 +235,9 @@
   .login-card-glass {
     isolation: isolate;
     background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    /* Edge alpha eased 0.6 → 0.3 per LOGIN_GLASS_CALIBRATION.md §2.
+       The border defines the card boundary without announcing itself. */
+    border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -243,8 +245,12 @@
   @supports ((backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))) {
     .login-card-glass {
       background: rgba(255, 255, 255, 0.55);
-      backdrop-filter: blur(20px) saturate(160%);
-      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      /* Saturation boost dropped per LOGIN_GLASS_CALIBRATION.md §1 —
+         the card now reads as "calm translucent paper" instead of
+         "lively glass" amplifying the video colors. Blur stays at
+         20px (legibility driver — do not reduce). */
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
   }
 
