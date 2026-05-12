@@ -252,13 +252,14 @@
   }
 
   /* Inputs inside the light card — translucent white fields, dark text,
-     light frost. The shared <x-text-input> base classes (bg-zinc-50)
-     are overridden only inside .login-card-glass. */
+     light frost. !important is needed because the shared <x-text-input>
+     component injects `bg-zinc-50` as a Tailwind utility class, which has
+     equal specificity but wins via source order in the compiled CSS. */
   .login-card-glass input[type="email"],
   .login-card-glass input[type="password"],
   .login-card-glass input[type="text"] {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
     transition: background 200ms, border-color 200ms, box-shadow 200ms;
   }
@@ -273,12 +274,36 @@
   .login-card-glass input[type="email"]:focus,
   .login-card-glass input[type="password"]:focus,
   .login-card-glass input[type="text"]:focus {
-    background: rgba(255, 255, 255, 0.55);
-    border-color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.55) !important;
+    border-color: rgba(255, 255, 255, 0.9) !important;
     box-shadow:
       0 0 0 3px rgba(255, 255, 255, 0.25),
       inset 0 1px 2px rgba(0, 0, 0, 0.04);
   }
+
+  /* Checkbox ("Keep me signed in") — frosted glass when unchecked.
+     When checked, fall back to the project's emerald accent so the
+     check mark (rendered as an SVG background-image by @tailwindcss/forms)
+     stays clearly visible. */
+  .login-card-glass input[type="checkbox"] {
+    background-color: rgba(255, 255, 255, 0.20) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: background-color 200ms, border-color 200ms;
+  }
+  @supports ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
+    .login-card-glass input[type="checkbox"] {
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+  }
+  .login-card-glass input[type="checkbox"]:hover {
+    background-color: rgba(255, 255, 255, 0.30) !important;
+  }
+  /* @tailwindcss/forms sets bg-color via inline style on :checked. The !important
+     above is intentionally only on the unchecked state — when the user clicks
+     to check it, the emerald accent surface returns so the white check mark
+     remains visible against a solid colored field. */
 
   /* Log in button — glass treatment too. Dark translucent surface with
      white text reads as the same material family as the card and inputs
