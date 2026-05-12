@@ -19,6 +19,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
         ]);
+
+        // Exclude /login and /logout from CSRF validation entirely.
+        // The TokenMismatchException renderer below is defense-in-depth
+        // — but it only fires AFTER the middleware throws, and if OPcache
+        // or any other layer ever stops the renderer from running, the
+        // 419 page shows. Skipping the check on these two paths makes
+        // the 419 path impossible on them, regardless of cache state.
+        //
+        // Tradeoff: a cross-origin POST could force-logout the user
+        // (annoying, not destructive) or attempt credential-stuffing on
+        // login (mitigated by Laravel's auth rate limiter + password
+        // hashing). Acceptable for this POC; revisit if it ships beyond.
+        $middleware->validateCsrfTokens(except: [
+            'login',
+            'logout',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Bounce stale CSRF (419) on auth endpoints straight to the login
