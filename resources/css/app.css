@@ -217,6 +217,69 @@
     50%      { transform: translateY(-3px); }
   }
 
+  /* ----------------------------------------------------------------
+     Login glass card (LOGIN_GLASS_CHECKLIST.md §1, §2)
+     Scoped class — only the login card uses it. Other guest views
+     keep their opaque-white treatment via Tailwind utilities.
+
+     Layering:
+       1. Card surface: bg-white/0.55, blur(20px) saturate(160%)
+       2. Nested inputs: bg-white/0.45, blur(10px) saturate(140%)
+       3. @supports fallbacks: bg-white/0.92 (card) / 0.85 (input)
+          render legibly on browsers without backdrop-filter.
+
+     `isolation: isolate` creates a fresh stacking context so the
+     element's own overflow:hidden + backdrop-filter don't conflict
+     (a common Safari/older-Chrome rendering bug).
+     ---------------------------------------------------------------- */
+  .login-card-glass {
+    isolation: isolate;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  @supports ((backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))) {
+    .login-card-glass {
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+    }
+  }
+
+  /* Nested inputs inside the login card — selector-scoped so the global
+     [type="email"] / [type="password"] base styles don't fight us, and
+     the shared <x-text-input> component stays untouched everywhere else. */
+  .login-card-glass input[type="email"],
+  .login-card-glass input[type="password"],
+  .login-card-glass input[type="text"] {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: background 200ms, border-color 200ms, box-shadow 200ms;
+  }
+  @supports ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
+    .login-card-glass input[type="email"],
+    .login-card-glass input[type="password"],
+    .login-card-glass input[type="text"] {
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+    }
+  }
+  /* Focus state: more opaque + bright edge + soft halo. Keyboard users
+     get the usual focus-visible outline from the global base rule. */
+  .login-card-glass input[type="email"]:focus,
+  .login-card-glass input[type="password"]:focus,
+  .login-card-glass input[type="text"]:focus {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow:
+      0 0 0 3px rgba(255, 255, 255, 0.25),
+      inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
   /* 9. Lift on hover — applies via group/element hover with low cost. */
   .hover-lift {
     transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1),

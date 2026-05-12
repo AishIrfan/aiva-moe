@@ -1,7 +1,9 @@
 <x-guest-layout>
     <div class="mb-6">
         <div class="text-[10px] uppercase tracking-[0.18em] text-zinc-400 font-semibold mb-1.5">Sign in</div>
-        <h1 class="text-2xl font-semibold tracking-tight text-zinc-900">Welcome back</h1>
+        {{-- Bumped to font-bold (700) per LOGIN_GLASS_CHECKLIST §3.1 — the
+             heading needs to anchor against video motion behind the glass card. --}}
+        <h1 class="text-2xl font-bold tracking-tight text-zinc-900">Welcome back</h1>
         <p class="text-sm text-zinc-500 mt-1">Pick up where you left off in the console.</p>
     </div>
 

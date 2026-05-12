@@ -45,8 +45,9 @@
                 <source src="{{ asset('login-background/bg-desktop.mp4') }}"  type="video/mp4"  media="(min-width: 768px)">
                 <source src="{{ asset('login-background/bg-mobile.mp4') }}"   type="video/mp4">
             </video>
-            {{-- Dark gradient overlay: keeps the white login card crisp against bright video frames --}}
-            <div class="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60"></div>
+            {{-- Dark gradient overlay — lightened slightly (was 40/60) per §6 since
+                 the new glass card adds its own visual weight against the video. --}}
+            <div class="absolute inset-0 bg-gradient-to-b from-black/30 to-black/45"></div>
         </div>
     @endif
 
@@ -71,9 +72,13 @@
             Structure / padding / rounded corners are identical to the
             non-login version.
         --}}
+        {{-- Card surface is `.login-card-glass` on /login (frosted backdrop-filter
+             with @supports fallback to bg-white/0.92), opaque white elsewhere.
+             See resources/css/app.css for the full glass spec including the
+             nested-input glass that targets <x-text-input> children. --}}
         <div class="w-full max-w-md rounded-2xl overflow-hidden
                     {{ request()->routeIs('login')
-                        ? 'bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-sm backdrop-saturate-150 border border-white/30 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.5)]'
+                        ? 'login-card-glass'
                         : 'bg-white border border-zinc-200 shadow-pop' }}">
             <div class="p-6 sm:p-8">
                 {{ $slot }}
