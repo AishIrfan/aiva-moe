@@ -234,103 +234,78 @@
      ---------------------------------------------------------------- */
   .login-card-glass {
     isolation: isolate;
-    /* Fallback for browsers without backdrop-filter — solid dark panel. */
-    background: rgba(20, 20, 24, 0.78);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    /* Fallback for browsers without backdrop-filter — opaque-ish white. */
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow:
-      0 12px 40px rgba(0, 0, 0, 0.45),
-      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
   @supports ((backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))) {
     .login-card-glass {
-      /* DARK glass variant — translucent black tint. The classroom video
-         shows through softly while the dark surface gives light text
-         inside maximum contrast. Blur stays heavy (legibility driver). */
-      background: rgba(20, 20, 24, 0.35);
-      backdrop-filter: blur(24px) saturate(140%);
-      -webkit-backdrop-filter: blur(24px) saturate(140%);
+      /* LIGHT glass variant — translucent white tint. Dark text inside
+         stays its native color; the classroom video shows through softly. */
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
     }
   }
 
-  /* Text inside the dark card — invert from default dark zinc to light.
-     Scoped to .login-card-glass so the shared blade components
-     (x-input-label, etc.) need no per-page overrides. */
-  .login-card-glass label,
-  .login-card-glass p,
-  .login-card-glass h1,
-  .login-card-glass h2,
-  .login-card-glass h3,
-  .login-card-glass .text-zinc-400,
-  .login-card-glass .text-zinc-500,
-  .login-card-glass .text-zinc-600,
-  .login-card-glass .text-zinc-900 {
-    color: rgba(255, 255, 255, 0.88);
-  }
-  .login-card-glass h1, .login-card-glass h2, .login-card-glass h3 {
-    color: rgb(255, 255, 255);
-  }
-  .login-card-glass .text-zinc-400 { color: rgba(255, 255, 255, 0.55); }
-  .login-card-glass .text-zinc-500 { color: rgba(255, 255, 255, 0.70); }
-  .login-card-glass .text-zinc-600 { color: rgba(255, 255, 255, 0.80); }
-  .login-card-glass hr,
-  .login-card-glass .border-zinc-100,
-  .login-card-glass .border-zinc-200 {
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  /* Inputs inside the dark card — dark translucent fields with light text. */
+  /* Inputs inside the light card — translucent white fields, dark text,
+     light frost. The shared <x-text-input> base classes (bg-zinc-50)
+     are overridden only inside .login-card-glass. */
   .login-card-glass input[type="email"],
   .login-card-glass input[type="password"],
   .login-card-glass input[type="text"] {
-    background: rgba(0, 0, 0, 0.30);
-    color: rgb(244, 244, 245); /* zinc-100 */
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
     transition: background 200ms, border-color 200ms, box-shadow 200ms;
-  }
-  .login-card-glass input[type="email"]::placeholder,
-  .login-card-glass input[type="password"]::placeholder,
-  .login-card-glass input[type="text"]::placeholder {
-    color: rgba(255, 255, 255, 0.40);
   }
   @supports ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
     .login-card-glass input[type="email"],
     .login-card-glass input[type="password"],
     .login-card-glass input[type="text"] {
-      background: rgba(0, 0, 0, 0.20);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
     }
   }
   .login-card-glass input[type="email"]:focus,
   .login-card-glass input[type="password"]:focus,
   .login-card-glass input[type="text"]:focus {
-    background: rgba(0, 0, 0, 0.40);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.55);
+    border-color: rgba(255, 255, 255, 0.9);
     box-shadow:
-      0 0 0 3px rgba(255, 255, 255, 0.15),
-      inset 0 1px 2px rgba(0, 0, 0, 0.25);
+      0 0 0 3px rgba(255, 255, 255, 0.25),
+      inset 0 1px 2px rgba(0, 0, 0, 0.04);
   }
 
-  /* Primary submit button inverts on the dark card — solid white with
-     dark text so it remains the visual anchor with maximum contrast. */
+  /* Log in button — glass treatment too. Dark translucent surface with
+     white text reads as the same material family as the card and inputs
+     (frosted glass), and the dark tint keeps the button as the visual
+     anchor of the form via the contrast against the lighter card. */
   .login-card-glass button[type="submit"] {
-    background: rgb(255, 255, 255);
-    color: rgb(24, 24, 27); /* zinc-900 */
+    background: rgba(0, 0, 0, 0.45);
+    color: rgb(255, 255, 255);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.20),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition: background 200ms, border-color 200ms, box-shadow 200ms;
+  }
+  @supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+    .login-card-glass button[type="submit"] {
+      background: rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(12px) saturate(140%);
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
+    }
   }
   .login-card-glass button[type="submit"]:hover {
-    background: rgb(228, 228, 231); /* zinc-200 */
+    background: rgba(0, 0, 0, 0.55);
+    border-color: rgba(255, 255, 255, 0.25);
   }
-
-  /* Accent green links — bump from zinc-700 family to a brighter shade
-     so they read against the dark surface. */
-  .login-card-glass .text-emerald-700,
-  .login-card-glass a.text-emerald-700 {
-    color: rgb(110, 231, 183); /* emerald-300 */
-  }
-  .login-card-glass .text-emerald-700:hover,
-  .login-card-glass a.text-emerald-700:hover {
-    color: rgb(167, 243, 208); /* emerald-200 */
+  .login-card-glass button[type="submit"]:active {
+    background: rgba(0, 0, 0, 0.65);
   }
 
   /* 9. Lift on hover — applies via group/element hover with low cost. */
