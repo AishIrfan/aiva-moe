@@ -73,7 +73,7 @@
         --}}
         <div class="w-full max-w-md rounded-2xl overflow-hidden
                     {{ request()->routeIs('login')
-                        ? 'bg-white/10 backdrop-blur-md border border-white/25 shadow-2xl shadow-black/40 ring-1 ring-inset ring-white/15'
+                        ? 'bg-gradient-to-b from-white/20 to-white/5 backdrop-blur-sm backdrop-saturate-150 border border-white/30 shadow-[0_30px_80px_-15px_rgba(0,0,0,0.55),inset_0_1px_0_0_rgba(255,255,255,0.5)]'
                         : 'bg-white border border-zinc-200 shadow-pop' }}">
             <div class="p-6 sm:p-8">
                 {{ $slot }}
