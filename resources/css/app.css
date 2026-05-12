@@ -244,11 +244,10 @@
   }
   @supports ((backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))) {
     .login-card-glass {
-      background: rgba(255, 255, 255, 0.55);
-      /* Saturation boost dropped per LOGIN_GLASS_CALIBRATION.md §1 —
-         the card now reads as "calm translucent paper" instead of
-         "lively glass" amplifying the video colors. Blur stays at
-         20px (legibility driver — do not reduce). */
+      /* Eased 0.55 → 0.35 per follow-up directive (more video visible
+         through the card). Blur stays at 20px — the checklist's "do
+         not reduce blur, it carries legibility" rule still holds. */
+      background: rgba(255, 255, 255, 0.35);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
     }
@@ -269,7 +268,10 @@
     .login-card-glass input[type="email"],
     .login-card-glass input[type="password"],
     .login-card-glass input[type="text"] {
-      background: rgba(255, 255, 255, 0.45);
+      /* Eased 0.45 → 0.25 in lockstep with the card opacity drop so
+         inputs still read as deeper glass nested in the card surface
+         (input opacity < card opacity preserves the hierarchy). */
+      background: rgba(255, 255, 255, 0.25);
       backdrop-filter: blur(10px) saturate(140%);
       -webkit-backdrop-filter: blur(10px) saturate(140%);
     }
