@@ -255,6 +255,26 @@
     }
   }
 
+  /* Text legibility overrides for the now-clearer glass card.
+     Per LOGIN_GLASS_CHECKLIST §3: tune the affected text colors
+     (NOT the card opacity) when contrast goes weak against the video.
+     The card glass dropped to 0.20 / 10px blur in the previous pass,
+     so the muted zinc-400/500/600 utilities are too faint against
+     bright frames. Darkening them keeps the html unchanged.
+
+     Specificity wins: `.login-card-glass .text-zinc-500` is (0,2,0)
+     vs Tailwind's `.text-zinc-500` (0,1,0), so no !important needed.
+
+     Affected elements per the user's report:
+       SIGN IN small caps           — text-zinc-400 → 0.60 black
+       Pick up where you left off   — text-zinc-500 → 0.72 black
+       EMAIL / PASSWORD labels      — text-zinc-500 (via x-input-label)
+       Keep me signed in            — text-zinc-600 → 0.82 black
+       Need an account?             — text-zinc-500 → 0.72 black */
+  .login-card-glass .text-zinc-400 { color: rgba(0, 0, 0, 0.60); }
+  .login-card-glass .text-zinc-500 { color: rgba(0, 0, 0, 0.72); }
+  .login-card-glass .text-zinc-600 { color: rgba(0, 0, 0, 0.82); }
+
   /* Inputs inside the light card — near-transparent fields delineated
      by a visible white border + recessed inner shadow. Previous attempt
      used rgba(255,255,255, 0.25) which COMPOUNDED with the card's white
