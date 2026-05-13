@@ -38,7 +38,23 @@ class StudentsController extends SchoolContextController
     public function student360(Request $request)
     {
         $school = $this->requireSchool($request);
-        $student = Student::where('school_id', $school->id)->findOrFail((int) $request->get('student_id'));
+
+        // Direct navigation to /school/student-360 with no query param used to
+        // throw ModelNotFoundException → 404 (findOrFail(0)). Redirect to the
+        // students list instead — that's the natural "pick a student first"
+        // entry point for this drill-down view.
+        $studentId = (int) $request->get('student_id');
+        if (! $studentId) {
+            return redirect()->route('school.students')
+                ->with('status', 'Pick a student to view their 360° profile.');
+        }
+
+        $student = Student::where('school_id', $school->id)->find($studentId);
+        if (! $student) {
+            return redirect()->route('school.students')
+                ->with('status', 'That student record was not found on this school.');
+        }
+
         $student->load(['guardians', 'activeEnrollment.schoolClass.grade', 'notes.author', 'events', 'leaveRequests', 'disciplineCases', 'assistanceApplications.program']);
         $recentAttendance = AttendanceSnapshot::where('student_id', $student->id)
             ->orderBy('date', 'desc')->limit(30)->get();

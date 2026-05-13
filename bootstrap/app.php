@@ -37,6 +37,34 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Helper used by the 404 / 403 / 405 handlers below. Sends the user
+        // to their default landing page (HomeController routes by role + mode)
+        // for HTML requests, login for guests, and passes JSON/API through
+        // unchanged so legitimate API consumers still receive proper status
+        // codes instead of HTML redirects.
+        $authRedirectOrPass = function (\Illuminate\Http\Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) return null;
+            if (! auth()->check())  return redirect()->route('login');
+            return redirect()->route('home');
+        };
+
+        // ModelNotFoundException (e.g. findOrFail with a bad id) → render to
+        // the user's landing instead of the 404 NOT FOUND page. Laravel
+        // converts these to 404 by default; intercepting earlier so the
+        // redirect runs without showing the error view.
+        $exceptions->render(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, \Illuminate\Http\Request $request) use ($authRedirectOrPass) {
+            return $authRedirectOrPass($request);
+        });
+
+        // Generic HttpException — covers abort(404), abort(403), abort(405),
+        // NotFoundHttpException, MethodNotAllowedHttpException, etc. Filter
+        // to the three statuses we want to swallow; everything else (419, 500,
+        // 503 maintenance, etc.) keeps its default rendering behavior.
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, \Illuminate\Http\Request $request) use ($authRedirectOrPass) {
+            if (! in_array($e->getStatusCode(), [403, 404, 405], true)) return null;
+            return $authRedirectOrPass($request);
+        });
+
         // Bounce stale CSRF (419) on auth endpoints straight to the login
         // page instead of showing the unhelpful 419 page-expired view.
         // On BOTH /login and /logout we invalidate + regenerate the session
