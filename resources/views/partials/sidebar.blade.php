@@ -97,6 +97,18 @@
         }));
     }
 
+    // moe_viewer (POC demo account) sees only the Students and Safety &
+    // Incidents groups when drilled into a school. Their MOE-level Ministry
+    // group (Overview / Schools / Trends) stays untouched — only the
+    // school-section sidebar is narrowed. moe_admin and other roles are
+    // unaffected.
+    if ($user?->isMoeViewer()) {
+        $schoolGroups = array_intersect_key($schoolGroups, array_flip([
+            'Students',
+            'Safety & Incidents',
+        ]));
+    }
+
     $moeGroups = [
         'Ministry' => [
             ['label' => 'Overview',                 'route' => 'moe.overview',  'icon' => $i['landmark']],
