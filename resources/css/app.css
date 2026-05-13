@@ -241,13 +241,17 @@
       0 8px 32px rgba(0, 0, 0, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
-  @supports ((backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))) {
+  @supports ((backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px))) {
     .login-card-glass {
-      /* LIGHT glass variant — translucent white tint. Dark text inside
-         stays its native color; the classroom video shows through softly. */
-      background: rgba(255, 255, 255, 0.35);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      /* "Clear glass" pass — opacity 0.35 → 0.20 and blur 20px → 10px
+         per follow-up directive. Reads as a real glass pane you see
+         through, not frosted ice. The earlier LOGIN_GLASS_CALIBRATION.md
+         "don't reduce blur" guidance is being explicitly overridden;
+         text legibility now leans on the inputs/button surfaces, the
+         dark heading weight, and the soft gradient overlay above. */
+      background: rgba(255, 255, 255, 0.20);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
   }
 
@@ -273,12 +277,15 @@
   .login-card-glass input[type="text"]::placeholder {
     color: rgba(0, 0, 0, 0.40) !important;
   }
-  @supports ((backdrop-filter: blur(12px)) or (-webkit-backdrop-filter: blur(12px))) {
+  @supports ((backdrop-filter: blur(6px)) or (-webkit-backdrop-filter: blur(6px))) {
     .login-card-glass input[type="email"],
     .login-card-glass input[type="password"],
     .login-card-glass input[type="text"] {
-      backdrop-filter: blur(12px) saturate(140%);
-      -webkit-backdrop-filter: blur(12px) saturate(140%);
+      /* Input blur eased 12px → 6px in lockstep with the card's clear-
+         glass treatment so the inputs don't end up MORE frosted than
+         the card itself (visual hierarchy would flip). */
+      backdrop-filter: blur(6px) saturate(130%);
+      -webkit-backdrop-filter: blur(6px) saturate(130%);
     }
   }
   .login-card-glass input[type="email"]:focus,
